@@ -1,0 +1,33 @@
+name: Check Stock Sell Signal
+
+on:
+  workflow_dispatch:
+    inputs:
+      ticker:
+        description: '종목 티커 또는 코드 (예: NVDA, 005930)'
+        required: true
+        type: string
+      buy_price:
+        description: '매수 평단가 (선택사항 - 입력 시 -7% 손절선 함께 계산)'
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  analyze-stock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run Stock Analyzer & Send to Telegram
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          INPUT_TICKER: ${{ github.event.inputs.ticker }}
+          INPUT_BUY_PRICE: ${{ github.event.inputs.buy_price }}
+        run: python bot_runner.py stock
