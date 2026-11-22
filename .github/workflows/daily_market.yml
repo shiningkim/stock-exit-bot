@@ -1,0 +1,24 @@
+name: Daily US Market Exit Check
+
+on:
+  schedule:
+    # UTC 21:15 = 한국시간(KST) 오전 06:15 (화~토 아침 실행 = 월~금 미국장 마감 후)
+    - cron: '15 21 * * 1-5'
+  workflow_dispatch: # 깃허브에서 수동 테스트 버튼 활성화
+
+jobs:
+  run-market-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run Market Analyzer
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python bot_runner.py market
