@@ -33,36 +33,27 @@ def run_daily_market():
     )
     send_telegram(msg)
 
-def check_telegram_commands():
-    """텔레그램 최근 메시지를 읽어 '/sell 종목코드 [평단가]' 명령어 처리"""
-    url = f"https://api.telegram.org/bot{TOKEN}/getUpdates"
-    res = requests.get(url).json()
-    if not res.get("ok") or not res["result"]:
+def run_stock_check():
+    ticker = os.environ.get("INPUT_TICKER", "").strip()
+    buy_price_str = os.environ.get("INPUT_BUY_PRICE", "").strip()
+
+    if not ticker:
+        send_telegram("❌ 종목 티커가 입력되지 않았습니다.")
         return
 
-    # 가장 마지막 메시지 확인 (중복 처리 방지를 위해 offset 업데이트)
-    last_update = res["result"][-1]
-    update_id = last_update["update_id"]
-    requests.get(url, params={"offset": update_id + 1})
+    buy_price = None
+    if buy_price_str:
+        try:
+            buy_price = float(buy_price_str.replace(",", ""))
+        except ValueError:
+            pass
 
-    message = last_update.get("message", {})
-    if str(message.get("chat", {}).get("id")) != str(CHAT_ID):
-        return
-
-    text = message.get("text", "").strip()
-    if text.startswith("/sell") or text.startswith("/check"):
-        parts = text.split()
-        if len(parts) >= 2:
-            ticker = parts[1]
-            buy_price = float(parts[2]) if len(parts) >= 3 else None
-            report = analyze_individual_stock(ticker, buy_price)
-            send_telegram(report)
-        else:
-            send_telegram("사용법: `/sell NVDA` 또는 `/sell 005930 75000` (평단가 선택)")
+    report = analyze_individual_stock(ticker, buy_price)
+    send_telegram(report)
 
 if __name__ == "__main__":
     mode = sys.argv[1] if len(sys.argv) > 1 else "market"
     if mode == "market":
         run_daily_market()
-    elif mode == "command":
-        check_telegram_commands()
+    elif mode == "stock":
+        run_stock_check()
